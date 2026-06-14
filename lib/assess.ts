@@ -8,6 +8,7 @@ import {
   nationalStrategyIds,
   newGrowthIds,
   lookupAnnexLabel,
+  lookupAnnexDescription,
   getCatalogMeta,
 } from "@/lib/annex"
 
@@ -244,6 +245,7 @@ function postProcessResult(result: AssessmentResult): AssessmentResult {
     items.map((m) => ({
       ...m,
       매핑항목명: lookupAnnexLabel(m.매핑항목ID) ?? m.매핑항목명,
+      기술의설명: lookupAnnexDescription(m.매핑항목ID) ?? "",
     }))
   return {
     ...result,

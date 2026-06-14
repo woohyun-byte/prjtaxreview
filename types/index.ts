@@ -15,6 +15,7 @@ export interface NavItem {
 export interface 매핑항목 {
   매핑항목ID: string
   매핑항목명: string
+  기술의설명?: string  // 서버 후처리로 카탈로그 원문 주입 — AI 스키마 외부
   적합도: "상" | "중" | "하"
   정량요건: "충족" | "미충족" | "확인필요" | "해당없음"
   판정근거: string

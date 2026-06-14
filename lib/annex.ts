@@ -6,6 +6,7 @@ interface AnnexItem {
   구분: string
   조문위치: string
   정식명칭: string
+  설명?: string
 }
 
 interface AnnexCatalog {
@@ -36,6 +37,12 @@ export function lookupAnnexLabel(id: string): string | null {
   const item = cat.items[id]
   if (!item) return null
   return `[${item.별표} ${item.조문위치}] ${item.정식명칭}`
+}
+
+/** ID → 시행령 원문 설명문 반환. 카탈로그에 설명이 없으면 null. */
+export function lookupAnnexDescription(id: string): string | null {
+  const cat = loadCatalog()
+  return cat.items[id]?.설명 ?? null
 }
 
 export function getCatalogMeta(): { 출처: string; 개정일: string } {

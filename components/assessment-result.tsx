@@ -20,13 +20,6 @@ function 적합도색(v: string) {
   return "text-muted-foreground font-semibold"
 }
 
-function 정량색(v: string) {
-  if (v === "충족") return "text-green-600 dark:text-green-400 font-semibold"
-  if (v === "미충족") return "text-red-600 dark:text-red-400 font-semibold"
-  if (v === "확인필요") return "text-amber-600 dark:text-amber-400 font-semibold"
-  return "text-muted-foreground"
-}
-
 function 종합배지(v: string) {
   if (v === "적합(유력)") return <Badge className="bg-green-600 text-white hover:bg-green-700">{v}</Badge>
   if (v === "조건부") return <Badge className="bg-amber-500 text-white hover:bg-amber-600">{v}</Badge>
@@ -36,7 +29,7 @@ function 종합배지(v: string) {
 
 // ── CSV 생성 ─────────────────────────────────────
 function buildCsv(result: AssessmentResult, 과제번호: string): string {
-  const cols = ["과제번호", "과제명", "구분", "매핑항목ID", "매핑항목명", "적합도", "정량요건", "적용공제율", "종합판정", "판정근거", "비고"]
+  const cols = ["과제번호", "과제명", "구분", "매핑항목ID", "매핑항목명", "기술의설명", "적합도", "적용공제율", "종합판정", "판정근거", "비고"]
   const escape = (v: string) => `"${(v ?? "").replace(/"/g, '""')}"`
   const 비고 = result.확인필요항목.join("; ")
 
@@ -47,8 +40,8 @@ function buildCsv(result: AssessmentResult, 과제번호: string): string {
       구분,
       m.매핑항목ID,
       m.매핑항목명,
+      m.기술의설명 ?? "",
       m.적합도,
-      m.정량요건,
       result.적용공제율,
       result.종합판정,
       m.판정근거,
@@ -69,8 +62,8 @@ function buildCsv(result: AssessmentResult, 과제번호: string): string {
         "해당없음",
         "-",
         "해당없음",
+        "",
         "하",
-        "해당없음",
         result.적용공제율,
         result.종합판정,
         result.판단사유,
@@ -91,18 +84,18 @@ function buildMd(result: AssessmentResult, 과제번호: string): string {
   const toTableRows = (items: 매핑항목[]) =>
     items.length > 0
       ? items
-          .map((m) => `| ${m.매핑항목ID} | ${m.매핑항목명} | ${m.적합도} | ${m.정량요건} | ${m.판정근거} |`)
+          .map((m) => `| ${m.매핑항목ID} | ${m.매핑항목명} | ${(m.기술의설명 ?? "").replace(/\n/g, " ")} | ${m.적합도} | ${m.판정근거} |`)
           .join("\n")
       : "| — | 부합 항목 없음 | — | — | — |"
 
   const 국가전략표 = [
-    "| 항목ID | 항목명 | 적합도 | 정량요건 | 판정근거 |",
+    "| 항목ID | 항목명 | 기술의설명 | 적합도 | 판정근거 |",
     "|---|---|---|---|---|",
     toTableRows(r.국가전략매핑 ?? []),
   ].join("\n")
 
   const 신성장표 = [
-    "| 항목ID | 항목명 | 적합도 | 정량요건 | 판정근거 |",
+    "| 항목ID | 항목명 | 기술의설명 | 적합도 | 판정근거 |",
     "|---|---|---|---|---|",
     toTableRows(r.신성장매핑 ?? []),
   ].join("\n")
@@ -161,20 +154,20 @@ function MappingTable({ items }: { items: 매핑항목[] }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b">
-            <th className="py-1 text-left font-medium text-muted-foreground">항목ID</th>
-            <th className="py-1 text-left font-medium text-muted-foreground">항목명</th>
-            <th className="py-1 text-left font-medium text-muted-foreground">적합도</th>
-            <th className="py-1 text-left font-medium text-muted-foreground">정량요건</th>
+            <th className="py-1 pr-2 text-left font-medium text-muted-foreground whitespace-nowrap">항목ID</th>
+            <th className="py-1 pr-3 text-left font-medium text-muted-foreground whitespace-nowrap">항목명</th>
+            <th className="py-1 pr-3 text-left font-medium text-muted-foreground">기술의설명</th>
+            <th className="py-1 pr-2 text-left font-medium text-muted-foreground whitespace-nowrap">적합도</th>
             <th className="py-1 text-left font-medium text-muted-foreground">판정근거</th>
           </tr>
         </thead>
         <tbody>
           {items.map((m, i) => (
-            <tr key={i} className="border-b last:border-0">
-              <td className="py-2 pr-2 font-mono text-xs text-muted-foreground">{m.매핑항목ID}</td>
-              <td className="py-2 pr-3 text-xs leading-snug">{m.매핑항목명}</td>
-              <td className={`py-2 pr-2 text-xs ${적합도색(m.적합도)}`}>{m.적합도}</td>
-              <td className={`py-2 pr-2 text-xs ${정량색(m.정량요건)}`}>{m.정량요건}</td>
+            <tr key={i} className="border-b last:border-0 align-top">
+              <td className="py-2 pr-2 font-mono text-xs text-muted-foreground whitespace-nowrap">{m.매핑항목ID}</td>
+              <td className="py-2 pr-3 text-xs leading-snug max-w-[12rem]">{m.매핑항목명}</td>
+              <td className="py-2 pr-3 text-xs text-muted-foreground leading-snug max-w-[26rem] whitespace-pre-wrap">{m.기술의설명 ?? ""}</td>
+              <td className={`py-2 pr-2 text-xs whitespace-nowrap ${적합도색(m.적합도)}`}>{m.적합도}</td>
               <td className="py-2 text-xs text-muted-foreground leading-snug">{m.판정근거}</td>
             </tr>
           ))}
