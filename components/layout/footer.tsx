@@ -8,7 +8,7 @@ export function Footer() {
       <Container className="flex h-14 items-center justify-between">
         <p className="text-sm text-muted-foreground">
           © 2026{" "}
-          <span className="font-medium text-foreground">'{siteConfig.name}'</span>
+          <span className="font-medium text-foreground">{siteConfig.name}</span>
           {" "}· 문의처{" "}
           <a
             href="mailto:woohyun.noh@gmail.com"
