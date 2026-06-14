@@ -13,7 +13,10 @@ export default function Home() {
           <Badge variant="outline">1차 초안</Badge>
         </div>
         <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-          조선 R&D 세액공제 적격성 판정
+          조선산업 R&D 세액공제 적격성 판정 Agent
+          <span className="ml-2 text-base font-normal text-muted-foreground">
+            (2026.4.1 시행령 기준)
+          </span>
         </h1>
         <p className="max-w-2xl text-muted-foreground">
           연구과제 정보를 입력하면 조세특례제한법 제10조 신성장·원천기술(별표7) 및
