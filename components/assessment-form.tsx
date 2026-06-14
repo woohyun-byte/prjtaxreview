@@ -295,7 +295,7 @@ export function AssessmentForm() {
                 <Label htmlFor="apiKey">
                   API 키{" "}
                   <span className="text-xs font-normal text-muted-foreground">
-                    (.env.local에 설정돼 있으면 비워두세요)
+                    (직접 입력 — 키는 서버에 저장되지 않습니다)
                   </span>
                 </Label>
                 <Input
