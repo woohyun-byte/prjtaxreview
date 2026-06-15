@@ -163,17 +163,17 @@ export function AssessmentForm() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="개발배경">개발 배경 <span className="text-red-500">*</span></Label>
+                <Label htmlFor="개발배경">개발배경 및 목적 <span className="text-red-500">*</span></Label>
                 <Textarea id="개발배경" rows={3} placeholder="기존 기술의 한계, 시장 필요, 규제 변화 등 개발을 착수하게 된 배경을 입력하세요." value={form.개발배경} onChange={(e) => set("개발배경", e.target.value)} required />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="과제목표">과제 목표 / 세부목표 <span className="text-red-500">*</span></Label>
+                <Label htmlFor="과제목표">개발목표(세부목표) <span className="text-red-500">*</span></Label>
                 <Textarea id="과제목표" rows={4} placeholder={"최종 목표와 세부 목표를 입력하세요.\n예:\n(1) 극저온(-163℃) 환경에서 열침투율 0.07%/day 이하 단열 설계\n(2) 신소재 적층 공법 시험·검증"} value={form.과제목표} onChange={(e) => set("과제목표", e.target.value)} required />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="수행방안">수행 방안 (개발 방법) <span className="text-red-500">*</span></Label>
+                <Label htmlFor="수행방안">주요개발항목 및 개발목표수준 <span className="text-red-500">*</span></Label>
                 <Textarea id="수행방안" rows={4} placeholder="개발 방법론, 실험/시험 계획, 시뮬레이션 방식, 외부 기관 협력 계획 등을 입력하세요." value={form.수행방안} onChange={(e) => set("수행방안", e.target.value)} required />
               </div>
             </div>
@@ -186,7 +186,7 @@ export function AssessmentForm() {
                 선택 항목 <span className="font-normal normal-case">(기술 부합도 판단에 참고)</span>
               </p>
               <div className="space-y-1.5">
-                <Label htmlFor="기대효과">기대 효과</Label>
+                <Label htmlFor="기대효과">개발효과</Label>
                 <Textarea id="기대효과" rows={2} placeholder="예: 단열 성능 20% 향상, 특허 출원 2건, 양산기술 이전" value={form.기대효과} onChange={(e) => set("기대효과", e.target.value)} />
               </div>
             </div>
