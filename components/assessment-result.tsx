@@ -4,7 +4,14 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import type { AssessmentResult, AssessmentInput, 매핑항목 } from "@/types"
+import type {
+  AssessmentResult,
+  AssessmentInput,
+  매핑항목,
+  부합도분류,
+  기준판정,
+  연구개발부합도검토,
+} from "@/types"
 
 interface Props {
   result: AssessmentResult
@@ -27,11 +34,38 @@ function 종합배지(v: string) {
   return <Badge variant="outline">{v}</Badge>
 }
 
+// ── 연구개발 부합도 분류 → 배지 + 라벨 ──
+function 부합도배지(v: 부합도분류) {
+  const cfg: Record<부합도분류, { cls: string; emoji: string }> = {
+    "연구개발활동": { cls: "bg-green-600 text-white hover:bg-green-700", emoji: "✅" },
+    "연구개발 부합도가 높은 활동": { cls: "bg-blue-600 text-white hover:bg-blue-700", emoji: "🔵" },
+    "연구개발 부합도가 낮은 활동": { cls: "bg-amber-500 text-white hover:bg-amber-600", emoji: "🟢" },
+    "비연구개발활동": { cls: "bg-zinc-500 text-white hover:bg-zinc-600", emoji: "⚪" },
+  }
+  const c = cfg[v] ?? { cls: "bg-zinc-400 text-white", emoji: "·" }
+  return <Badge className={c.cls}>{c.emoji} {v}</Badge>
+}
+
+function 기준색(v: 기준판정) {
+  if (v === "충족") return "text-green-600 dark:text-green-400 font-semibold"
+  if (v === "부분충족") return "text-amber-600 dark:text-amber-400 font-semibold"
+  if (v === "미충족") return "text-red-600 dark:text-red-400 font-semibold"
+  return "text-muted-foreground"
+}
+
 // ── CSV 생성 ─────────────────────────────────────
 function buildCsv(result: AssessmentResult, 과제번호: string): string {
-  const cols = ["과제번호", "과제명", "구분", "매핑항목ID", "매핑항목명", "기술의설명", "적합도", "적용공제율", "종합판정", "판정근거", "비고"]
+  const cols = ["과제번호", "과제명", "구분", "매핑항목ID", "매핑항목명", "기술의설명", "적합도", "적용공제율", "종합판정", "연구개발부합도분류", "5대기준_충족수", "판정근거", "비고"]
   const escape = (v: string) => `"${(v ?? "").replace(/"/g, '""')}"`
   const 비고 = result.확인필요항목.join("; ")
+  const 부합도 = result.연구개발부합도검토
+  const 부합도분류값 = 부합도?.분류 ?? ""
+  const 기준 = 부합도?.["5대기준평가"]
+  const 충족수 = 기준
+    ? [기준.신규성, 기준.창의성, 기준.불확실성, 기준.체계성, 기준.재현가능성]
+        .filter((k) => k?.평가 === "충족").length
+    : 0
+  const 충족표시 = 기준 ? `${충족수}/5` : ""
 
   const toRow = (m: 매핑항목, 구분: string) =>
     [
@@ -44,6 +78,8 @@ function buildCsv(result: AssessmentResult, 과제번호: string): string {
       m.적합도,
       result.적용공제율,
       result.종합판정,
+      부합도분류값,
+      충족표시,
       m.판정근거,
       비고,
     ]
@@ -66,6 +102,8 @@ function buildCsv(result: AssessmentResult, 과제번호: string): string {
         "하",
         result.적용공제율,
         result.종합판정,
+        부합도분류값,
+        충족표시,
         result.판단사유,
         비고,
       ]
@@ -100,8 +138,44 @@ function buildMd(result: AssessmentResult, 과제번호: string): string {
     toTableRows(r.신성장매핑 ?? []),
   ].join("\n")
 
+  // ③ 연구개발 부합도 검토 섹션
+  const 부합도 = r.연구개발부합도검토
+  let 부합도섹션 = ""
+  if (부합도) {
+    const k = 부합도["5대기준평가"]
+    const 기준표 = k
+      ? [
+          "| 기준 | 평가 | 근거 |",
+          "|---|---|---|",
+          `| 신규성 | ${k.신규성?.평가 ?? "-"} | ${(k.신규성?.근거 ?? "").replace(/\n/g, " ")} |`,
+          `| 창의성 | ${k.창의성?.평가 ?? "-"} | ${(k.창의성?.근거 ?? "").replace(/\n/g, " ")} |`,
+          `| 불확실성 | ${k.불확실성?.평가 ?? "-"} | ${(k.불확실성?.근거 ?? "").replace(/\n/g, " ")} |`,
+          `| 체계성 | ${k.체계성?.평가 ?? "-"} | ${(k.체계성?.근거 ?? "").replace(/\n/g, " ")} |`,
+          `| 재현가능성 | ${k.재현가능성?.평가 ?? "-"} | ${(k.재현가능성?.근거 ?? "").replace(/\n/g, " ")} |`,
+        ].join("\n")
+      : "(5대기준 평가 없음)"
+    const 핵심 = (부합도.핵심포인트 ?? []).map((p) => `- ${p}`).join("\n") || "- (없음)"
+    const 경고 = (부합도.경고요소 ?? []).length
+      ? (부합도.경고요소 ?? []).map((p) => `- ⚠️ ${p}`).join("\n")
+      : "- (없음)"
+    부합도섹션 = `\n### ③ 연구개발 부합도 검토 (자가진단)
+- **분류**: ${부합도.분류}
+- **판단근거**: ${부합도.판단근거}
+
+#### 5대 판단기준
+${기준표}
+
+#### 핵심 포인트
+${핵심}
+
+#### 경고 요소
+${경고}
+`
+  }
+
   return `## [${r.과제명}] 세액공제 대상기술 부합도 판정 결과
 > ⚠️ 1차 초안 — 기술심의위원회·국세청 사전심사·세무 전문가 검토로 확정 필요. 단정 아님.
+> 연구개발 부합도 검토는 「기업 연구개발활동 가이드라인」(KOITA) 기반 자가진단입니다. 공통·필수요건(연구소 신고·인력 전담·설비 용도)은 별도 확인이 필요합니다.
 
 ### 과제 정보 요약
 - 과제번호: ${과제번호 || "미입력"}
@@ -117,7 +191,7 @@ ${국가전략표}
 
 ### ② 신성장·원천기술 부합도 (별표7, 20%+α)
 ${신성장표}
-
+${부합도섹션}
 ### 제목 진단
 - 오해소지: ${r.제목진단.오해소지}
 ${r.제목진단.오해소지 === "있음" ? `- 사유: ${r.제목진단.사유}\n- 대체 제목 추천:\n${r.제목진단.대체제목추천.map((t, i) => `  ${i + 1}. ${t}`).join("\n")}` : ""}
@@ -138,6 +212,90 @@ function download(content: string, filename: string, mime: string) {
   a.download = filename
   a.click()
   URL.revokeObjectURL(url)
+}
+
+// ── 연구개발 부합도 검토 카드 ──────────────────
+function 부합도카드({ 검토 }: { 검토: 연구개발부합도검토 }) {
+  const 기준 = 검토["5대기준평가"]
+  const 행: Array<[string, 기준판정, string]> = 기준
+    ? [
+        ["신규성", 기준.신규성?.평가, 기준.신규성?.근거 ?? ""],
+        ["창의성", 기준.창의성?.평가, 기준.창의성?.근거 ?? ""],
+        ["불확실성", 기준.불확실성?.평가, 기준.불확실성?.근거 ?? ""],
+        ["체계성", 기준.체계성?.평가, 기준.체계성?.근거 ?? ""],
+        ["재현가능성", 기준.재현가능성?.평가, 기준.재현가능성?.근거 ?? ""],
+      ]
+    : []
+  const 핵심 = 검토.핵심포인트 ?? []
+  const 경고 = 검토.경고요소 ?? []
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+          <span>연구개발 부합도 검토</span>
+          {부합도배지(검토.분류)}
+          <span className="ml-auto text-xs font-normal text-muted-foreground">
+            평가기준.md(v1.2) 기반 자가진단
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm leading-relaxed text-foreground/90">{검토.판단근거}</p>
+
+        {행.length > 0 && (
+          <div className="overflow-x-auto rounded-md border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/30">
+                  <th className="py-1.5 px-3 text-left font-medium text-muted-foreground whitespace-nowrap">기준</th>
+                  <th className="py-1.5 px-3 text-left font-medium text-muted-foreground whitespace-nowrap">평가</th>
+                  <th className="py-1.5 px-3 text-left font-medium text-muted-foreground">근거</th>
+                </tr>
+              </thead>
+              <tbody>
+                {행.map(([이름, 평가, 근거], i) => (
+                  <tr key={i} className="border-b last:border-0 align-top">
+                    <td className="py-2 px-3 text-xs whitespace-nowrap font-medium">{이름}</td>
+                    <td className={`py-2 px-3 text-xs whitespace-nowrap ${기준색(평가)}`}>{평가 ?? "-"}</td>
+                    <td className="py-2 px-3 text-xs text-muted-foreground leading-snug">{근거}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {핵심.length > 0 && (
+          <div>
+            <p className="mb-1 text-xs font-medium text-muted-foreground">핵심 포인트</p>
+            <ul className="space-y-1 text-sm">
+              {핵심.map((p, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="text-muted-foreground">•</span>
+                  <span>{p}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {경고.length > 0 && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-700 dark:bg-amber-950/30">
+            <p className="mb-1 text-xs font-semibold text-amber-700 dark:text-amber-300">⚠️ 경고 요소</p>
+            <ul className="space-y-1">
+              {경고.map((p, i) => (
+                <li key={i} className="flex gap-2 text-amber-800 dark:text-amber-200">
+                  <span>•</span>
+                  <span>{p}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
 }
 
 // ── 매핑 테이블 ──────────────────────────────────
@@ -186,8 +344,11 @@ export function AssessmentResult({ result: r, input, onUseTitle }: Props) {
   return (
     <div className="space-y-4">
       {/* 면책 배너 */}
-      <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
-        ⚠️ <strong>1차 초안</strong> — 기술심의위원회·국세청 사전심사·세무 전문가 검토로 확정 필요. 단정 아님.
+      <div className="space-y-1 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+        <p>⚠️ <strong>1차 초안</strong> — 기술심의위원회·국세청 사전심사·세무 전문가 검토로 확정 필요. 단정 아님.</p>
+        <p className="text-xs">
+          연구개발 부합도 검토는 「기업 연구개발활동 가이드라인」(KOITA) 기반 자가진단입니다. 공통·필수요건(연구소 신고·인력 전담·설비 용도)은 별도 확인이 필요합니다.
+        </p>
       </div>
 
       {/* 요약 */}
@@ -232,6 +393,9 @@ export function AssessmentResult({ result: r, input, onUseTitle }: Props) {
           <p className="text-sm text-muted-foreground">{r.판단사유}</p>
         </CardContent>
       </Card>
+
+      {/* 연구개발 부합도 검토 (4단계 분류) */}
+      {r.연구개발부합도검토 && <부합도카드 검토={r.연구개발부합도검토} />}
 
       {/* 제목 진단 (오해소지 있을 때) */}
       {r.제목진단.오해소지 === "있음" && (
