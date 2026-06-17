@@ -15,20 +15,36 @@ export async function POST(request: NextRequest) {
 
   const engine = input.engine ?? "gemini"
 
-  // 키 우선순위: body.apiKey > 환경변수
-  const envKey =
-    engine === "claude"
-      ? getOptionalEnv("ANTHROPIC_API_KEY")
-      : getOptionalEnv("GEMINI_API_KEY")
-
-  const apiKey = (input.apiKey?.trim() || "") || envKey || ""
-
-  if (!apiKey) {
-    const guide =
+  // ── 키 해석: 엔진별 분기 ──────────────────────────────
+  let apiKey = ""
+  if (engine === "bedrock") {
+    // Bedrock: 사용자 키 불요 — 서버의 IAM Role/AWS_PROFILE로 자동 인증.
+    // ANTHROPIC_BEDROCK_URL이 없으면 즉시 400 반환.
+    const bedrockUrl = getOptionalEnv("ANTHROPIC_BEDROCK_URL")
+    if (!bedrockUrl) {
+      return NextResponse.json(
+        {
+          error:
+            "서버에 ANTHROPIC_BEDROCK_URL이 설정되지 않았습니다. " +
+            ".env.local을 확인하거나 관리자에게 문의하세요. (가이드: https://aws-guide.hd.com/s/llmgw)",
+        },
+        { status: 400 }
+      )
+    }
+  } else {
+    // Claude / Gemini: 키 우선순위 body.apiKey > 환경변수
+    const envKey =
       engine === "claude"
-        ? "ANTHROPIC_API_KEY를 .env.local에 설정하거나 화면 키 입력란에 입력하세요. 키 발급: console.anthropic.com"
-        : "GEMINI_API_KEY를 .env.local에 설정하거나 화면 키 입력란에 입력하세요. 무료 키 발급: aistudio.google.com"
-    return NextResponse.json({ error: `API 키가 없습니다. ${guide}` }, { status: 400 })
+        ? getOptionalEnv("ANTHROPIC_API_KEY")
+        : getOptionalEnv("GEMINI_API_KEY")
+    apiKey = (input.apiKey?.trim() || "") || envKey || ""
+    if (!apiKey) {
+      const guide =
+        engine === "claude"
+          ? "ANTHROPIC_API_KEY를 .env.local에 설정하거나 화면 키 입력란에 입력하세요. 키 발급: console.anthropic.com"
+          : "GEMINI_API_KEY를 .env.local에 설정하거나 화면 키 입력란에 입력하세요. 무료 키 발급: aistudio.google.com"
+      return NextResponse.json({ error: `API 키가 없습니다. ${guide}` }, { status: 400 })
+    }
   }
 
   if (!input.과제명?.trim()) {

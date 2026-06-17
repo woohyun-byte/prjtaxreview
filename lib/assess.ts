@@ -1,6 +1,7 @@
 import fs from "fs"
 import path from "path"
 import Anthropic from "@anthropic-ai/sdk"
+import AnthropicBedrock from "@anthropic-ai/bedrock-sdk"
 import { GoogleGenAI, Type } from "@google/genai"
 import type { AssessmentInput, AssessmentResult } from "@/types"
 import {
@@ -11,6 +12,7 @@ import {
   lookupAnnexDescription,
   getCatalogMeta,
 } from "@/lib/annex"
+import { getEnv, getOptionalEnv } from "@/lib/env"
 
 // ──────────────────────────────────────────────
 // 기준문서 로드 (PRD + 평가기준 v1.2 — 연구개발 부합도 검토용)
@@ -334,15 +336,16 @@ function postProcessResult(result: AssessmentResult): AssessmentResult {
 }
 
 // ──────────────────────────────────────────────
-// Claude 판정 (Anthropic tool use, 프롬프트 캐싱)
+// 공통 Messages 판정 헬퍼 (Claude / Bedrock 공유)
+// Anthropic Messages API 호환 클라이언트(Anthropic · AnthropicBedrock)를 모두 수용.
+// tool_use 강제 + 프롬프트 캐싱. 클라이언트 생성은 각 엔진 함수가 담당.
 // ──────────────────────────────────────────────
-async function assessWithClaude(input: AssessmentInput, apiKey: string): Promise<AssessmentResult> {
-  const client = new Anthropic({ apiKey })
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function runMessagesAssessment(client: any, input: AssessmentInput): Promise<AssessmentResult> {
   const docs = loadCriteriaDocs()
   const annexCtx = buildAnnexContext(input.기준범위 ?? "조선추출", "claude")
-
   const response = await client.messages.create({
-    model: input.model || "claude-sonnet-4-6",
+    model: input.model,
     max_tokens: 4096,
     system: [
       {
@@ -355,12 +358,31 @@ async function assessWithClaude(input: AssessmentInput, apiKey: string): Promise
     tool_choice: { type: "tool", name: "판정결과" },
     messages: [{ role: "user", content: buildUserMessage(input) }],
   })
-
-  const toolUse = response.content.find((b) => b.type === "tool_use")
+  const toolUse = response.content.find((b: { type: string }) => b.type === "tool_use")
   if (!toolUse || toolUse.type !== "tool_use") {
-    throw new Error("Claude API에서 판정결과를 받지 못했습니다.")
+    throw new Error("API에서 판정결과를 받지 못했습니다.")
   }
   return postProcessResult(toolUse.input as AssessmentResult)
+}
+
+// ──────────────────────────────────────────────
+// Claude 판정 (Anthropic tool use, 프롬프트 캐싱)
+// ──────────────────────────────────────────────
+async function assessWithClaude(input: AssessmentInput, apiKey: string): Promise<AssessmentResult> {
+  const client = new Anthropic({ apiKey })
+  return runMessagesAssessment(client, { ...input, model: input.model || "claude-sonnet-4-6" })
+}
+
+// ──────────────────────────────────────────────
+// Bedrock 판정 (HD현대 LLM Gateway, IAM Role/SigV4)
+// 사용자 API 키 불요 — 서버의 AWS 자격증명 체인(IAM Role · AWS_PROFILE)으로 자동 인증.
+// 필수 env: ANTHROPIC_BEDROCK_URL / 선택: AWS_REGION · ANTHROPIC_BEDROCK_TOKEN
+// ──────────────────────────────────────────────
+async function assessWithBedrock(input: AssessmentInput): Promise<AssessmentResult> {
+  const baseURL = getEnv("ANTHROPIC_BEDROCK_URL")
+  const awsRegion = getOptionalEnv("AWS_REGION") ?? "ap-northeast-2"
+  const client = new AnthropicBedrock({ baseURL, awsRegion })
+  return runMessagesAssessment(client, { ...input, model: input.model || "claude-sonnet-4.6" })
 }
 
 // ──────────────────────────────────────────────
@@ -395,9 +417,31 @@ async function assessWithGemini(input: AssessmentInput, apiKey: string): Promise
 // ──────────────────────────────────────────────
 // 오류 메시지 사용자 친화적 변환
 // ──────────────────────────────────────────────
-function friendlyError(err: unknown, engine: "claude" | "gemini"): string {
+function friendlyError(err: unknown, engine: "claude" | "gemini" | "bedrock"): string {
   const msg = err instanceof Error ? err.message : String(err)
   const lower = msg.toLowerCase()
+
+  // ── Bedrock / HD현대 LLM Gateway 전용 오류 ──
+  if (engine === "bedrock") {
+    if (
+      lower.includes("credential") || lower.includes("no credentials") ||
+      lower.includes("accessdenied") || lower.includes("access denied") ||
+      lower.includes("expired") || lower.includes("token")
+    ) {
+      return `Bedrock 자격증명 오류. 서버의 IAM Role·AWS_PROFILE 설정을 확인하거나 관리자에게 문의하세요. 원문: ${msg.slice(0, 200)}`
+    }
+    if (
+      lower.includes("econnrefused") || lower.includes("fetch failed") ||
+      lower.includes("could not connect") || lower.includes("socket") ||
+      lower.includes("network")
+    ) {
+      return `Bedrock 게이트웨이에 연결할 수 없습니다. ANTHROPIC_BEDROCK_URL·AWS_REGION·네트워크 설정을 확인하세요.`
+    }
+    if (lower.includes("model") || lower.includes("not found") || lower.includes("404")) {
+      return `Bedrock 모델을 찾을 수 없습니다. 모델 ID를 확인하세요(게이트웨이 지원 모델: claude-sonnet-4.6 / haiku-4.5 / opus-4.7). 원문: ${msg.slice(0, 200)}`
+    }
+    return `Bedrock 게이트웨이 오류: ${msg.slice(0, 400)}`
+  }
 
   if (lower.includes("credit") || lower.includes("billing") || lower.includes("quota")) {
     return engine === "claude"
@@ -431,6 +475,8 @@ export async function assess(input: AssessmentInput, apiKey: string): Promise<As
   try {
     if (input.engine === "claude") {
       return await assessWithClaude(input, apiKey)
+    } else if (input.engine === "bedrock") {
+      return await assessWithBedrock(input)
     } else {
       return await assessWithGemini(input, apiKey)
     }

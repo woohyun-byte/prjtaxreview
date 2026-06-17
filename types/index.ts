@@ -86,7 +86,7 @@ export interface AssessmentInput {
   과제목표: string
   수행방안: string
   기대효과: string
-  engine: "claude" | "gemini"
+  engine: "claude" | "gemini" | "bedrock" // bedrock = HD현대 LLM Gateway (IAM Role 자동인증, 사용자 키 불요)
   model: string
   apiKey?: string
   기준범위?: "조선추출" | "별표전문"

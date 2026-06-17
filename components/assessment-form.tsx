@@ -37,6 +37,18 @@ const ENGINE_CONFIG = {
     keyLinkLabel: "console.anthropic.com",
     storageKey: "claude_api_key",
   },
+  bedrock: {
+    label: "사내 (HD현대 Gateway)",
+    models: [
+      { id: "claude-sonnet-4.6", label: "Sonnet 4.6 (권장)" },
+      { id: "claude-haiku-4.5",  label: "Haiku 4.5 (빠름)" },
+      { id: "claude-opus-4.7",   label: "Opus 4.7 (고정밀)" },
+    ],
+    keyPlaceholder: "",
+    keyLink: "https://aws-guide.hd.com/s/llmgw",
+    keyLinkLabel: "aws-guide.hd.com",
+    storageKey: "", // 키 미사용 — IAM Role 자동인증
+  },
 } as const
 
 type Engine = keyof typeof ENGINE_CONFIG
@@ -64,8 +76,13 @@ export function AssessmentForm() {
   const engine = form.engine as Engine
   const config = ENGINE_CONFIG[engine]
 
-  // localStorage에서 저장된 키 복원
+  // localStorage에서 저장된 키 복원 (bedrock은 storageKey 없으므로 skip)
   useEffect(() => {
+    if (!config.storageKey) {
+      setForm((prev) => ({ ...prev, apiKey: "" }))
+      setSaveKey(false)
+      return
+    }
     const saved = localStorage.getItem(config.storageKey)
     if (saved) {
       setForm((prev) => ({ ...prev, apiKey: saved }))
@@ -200,8 +217,8 @@ export function AssessmentForm() {
               {/* 엔진 선택 */}
               <div className="space-y-1.5">
                 <Label>엔진 선택</Label>
-                <div className="flex gap-2">
-                  {(["gemini", "claude"] as Engine[]).map((e) => (
+                <div className="flex flex-wrap gap-2">
+                  {(["gemini", "claude", "bedrock"] as Engine[]).map((e) => (
                     <button
                       key={e}
                       type="button"
@@ -227,6 +244,14 @@ export function AssessmentForm() {
                 {engine === "claude" && (
                   <p className="text-xs text-muted-foreground">
                     크레딧 충전 필요 — 키 발급:{" "}
+                    <a href={config.keyLink} target="_blank" rel="noopener noreferrer" className="underline">
+                      {config.keyLinkLabel}
+                    </a>
+                  </p>
+                )}
+                {engine === "bedrock" && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    🏢 HD현대 임직원 전용 — 서버 IAM Role로 자동 인증. 가이드:{" "}
                     <a href={config.keyLink} target="_blank" rel="noopener noreferrer" className="underline">
                       {config.keyLinkLabel}
                     </a>
@@ -290,35 +315,46 @@ export function AssessmentForm() {
                 )}
               </div>
 
-              {/* API 키 입력 */}
-              <div className="space-y-1.5">
-                <Label htmlFor="apiKey">
-                  API 키{" "}
-                  <span className="text-xs font-normal text-muted-foreground">
-                    (직접 입력 — 키는 서버에 저장되지 않습니다)
-                  </span>
-                </Label>
-                <Input
-                  id="apiKey"
-                  type="password"
-                  placeholder={config.keyPlaceholder}
-                  value={form.apiKey ?? ""}
-                  onChange={(e) => set("apiKey", e.target.value)}
-                  autoComplete="off"
-                />
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="saveKey"
-                    checked={saveKey}
-                    onChange={(e) => setSaveKey(e.target.checked)}
-                    className="h-3.5 w-3.5"
+              {/* API 키 입력 — bedrock은 IAM Role 자동인증이므로 미표시 */}
+              {engine !== "bedrock" ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="apiKey">
+                    API 키{" "}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      (직접 입력 — 키는 서버에 저장되지 않습니다)
+                    </span>
+                  </Label>
+                  <Input
+                    id="apiKey"
+                    type="password"
+                    placeholder={config.keyPlaceholder}
+                    value={form.apiKey ?? ""}
+                    onChange={(e) => set("apiKey", e.target.value)}
+                    autoComplete="off"
                   />
-                  <label htmlFor="saveKey" className="text-xs text-muted-foreground cursor-pointer">
-                    이 브라우저에 키 저장 (localStorage — 공용 PC에서는 사용 금지)
-                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="saveKey"
+                      checked={saveKey}
+                      onChange={(e) => setSaveKey(e.target.checked)}
+                      className="h-3.5 w-3.5"
+                    />
+                    <label htmlFor="saveKey" className="text-xs text-muted-foreground cursor-pointer">
+                      이 브라우저에 키 저장 (localStorage — 공용 PC에서는 사용 금지)
+                    </label>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-800 dark:bg-blue-950">
+                  <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    🔐 API 키 입력 불필요
+                  </p>
+                  <p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
+                    서버 환경(IAM Role / AWS_PROFILE)으로 자동 인증됩니다. 자격증명은 서버 관리자가 설정합니다.
+                  </p>
+                </div>
+              )}
             </div>
 
             <Separator />
