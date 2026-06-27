@@ -1,0 +1,102 @@
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "조선산업 R&D 세액공제 적격성 판정 Agent" [ref=e4] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=e5]:
+        - link "판정" [ref=e6] [cursor=pointer]:
+          - /url: /
+      - button "테마 변경" [ref=e8]:
+        - img
+  - main [ref=e9]:
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - generic [ref=e13]: 대기업
+          - generic [ref=e14]: 조특법 제10조
+          - generic [ref=e15]: 별표7 / 별표7의2
+          - generic [ref=e16]: 1차 초안
+        - heading "조선산업 R&D 세액공제 적격성 판정 Agent(2026.4.1 시행령 기준)" [level=1] [ref=e17]
+        - paragraph [ref=e18]:
+          - text: 연구과제 정보를 입력하면 조세특례제한법 제10조 신성장·원천기술(별표7) 및 국가전략기술(별표7의2) 해당여부를 1차 판정합니다.
+          - text: 최종 판단은 기술심의위원회·국세청 사전심사·세무 전문가 검토로 확정하십시오.
+      - generic [ref=e21]:
+        - generic [ref=e23]:
+          - text: 과제 정보 입력
+          - generic [ref=e24]: 필수 4항목
+        - generic [ref=e25]:
+          - generic [ref=e26]:
+            - paragraph [ref=e27]: 필수 항목
+            - generic [ref=e28]:
+              - generic [ref=e29]:
+                - generic [ref=e30]:
+                  - text: 과제번호
+                  - generic [ref=e31]: (선택 — 미입력 시 NEW-001)
+                - textbox "과제번호 (선택 — 미입력 시 NEW-001)" [ref=e32]:
+                  - /placeholder: "예: P006"
+              - generic [ref=e33]:
+                - generic [ref=e34]:
+                  - text: 연구 제목 (과제명)
+                  - generic [ref=e35]: "*"
+                - textbox "연구 제목 (과제명) *" [ref=e36]:
+                  - /placeholder: "예: LNG 화물창 극저온 단열 적층설계 기술 개발"
+            - generic [ref=e37]:
+              - generic [ref=e38]:
+                - text: 개발배경 및 목적
+                - generic [ref=e39]: "*"
+              - textbox "개발배경 및 목적 *" [ref=e40]:
+                - /placeholder: 기존 기술의 한계, 시장 필요, 규제 변화 등 개발을 착수하게 된 배경을 입력하세요.
+            - generic [ref=e41]:
+              - generic [ref=e42]:
+                - text: 개발목표(세부목표)
+                - generic [ref=e43]: "*"
+              - textbox "개발목표(세부목표) *" [ref=e44]:
+                - /placeholder: "최종 목표와 세부 목표를 입력하세요.\n예:\n(1) 극저온(-163℃) 환경에서 열침투율 0.07%/day 이하 단열 설계\n(2) 신소재 적층 공법 시험·검증"
+            - generic [ref=e45]:
+              - generic [ref=e46]:
+                - text: 주요개발항목 및 개발목표수준
+                - generic [ref=e47]: "*"
+              - textbox "주요개발항목 및 개발목표수준 *" [ref=e48]:
+                - /placeholder: 개발 방법론, 실험/시험 계획, 시뮬레이션 방식, 외부 기관 협력 계획 등을 입력하세요.
+          - generic [ref=e49]:
+            - paragraph [ref=e50]: 선택 항목 (기술 부합도 판단에 참고)
+            - generic [ref=e51]:
+              - generic [ref=e52]: 개발효과
+              - textbox "개발효과" [ref=e53]:
+                - /placeholder: "예: 단열 성능 20% 향상, 특허 출원 2건, 양산기술 이전"
+          - generic [ref=e54]:
+            - paragraph [ref=e55]: 판정 엔진 설정
+            - generic [ref=e56]:
+              - generic [ref=e57]: 엔진 선택
+              - generic [ref=e58]:
+                - button "무료 (Gemini)" [ref=e59]
+                - button "유료 (Claude)" [ref=e60]
+                - button "사내 (HD현대 Gateway)" [active] [ref=e61]
+              - paragraph [ref=e98]:
+                - text: "🏢 HD현대 임직원 전용 — 서버 IAM Role로 자동 인증. 가이드:"
+                - link "aws-guide.hd.com" [ref=e99] [cursor=pointer]:
+                  - /url: https://aws-guide.hd.com/s/llmgw
+            - generic [ref=e64]:
+              - generic [ref=e65]: 모델
+              - generic [ref=e66]:
+                - button "Sonnet 4.6 (권장)" [ref=e100]
+                - button "Haiku 4.5 (빠름)" [ref=e101]
+                - button "Opus 4.7 (고정밀)" [ref=e102]
+            - generic [ref=e69]:
+              - generic [ref=e70]: 판정 기준 데이터
+              - generic [ref=e71]:
+                - button "조선 관련 항목만 (권장)" [ref=e72]
+                - button "별표 전문 (유료 전용)" [ref=e73]
+            - generic [ref=e75]:
+              - paragraph [ref=e103]: 🔐 API 키 입력 불필요
+              - paragraph [ref=e104]: 서버 환경(IAM Role / AWS_PROFILE)으로 자동 인증됩니다. 자격증명은 서버 관리자가 설정합니다.
+          - button "기술 부합도 판정 시작" [ref=e83]
+  - contentinfo [ref=e84]:
+    - paragraph [ref=e86]:
+      - text: © 2026 조선산업 R&D 세액공제 적격성 판정 Agent · 문의처
+      - link "woohyun.noh@gmail.com" [ref=e87] [cursor=pointer]:
+        - /url: mailto:woohyun.noh@gmail.com
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e93] [cursor=pointer]:
+    - img [ref=e94]
+  - alert [ref=e97]
